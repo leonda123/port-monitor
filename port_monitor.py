@@ -447,6 +447,8 @@ class PortMonitor(QMainWindow):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.table.setContextMenuPolicy(Qt.CustomContextMenu)  # 设置自定义上下文菜单
+        self.table.customContextMenuRequested.connect(self.show_context_menu)  # 连接右键菜单信号
         main_layout.addWidget(self.table)
         
         # 状态栏
@@ -572,6 +574,38 @@ class PortMonitor(QMainWindow):
             QMessageBox.warning(self, "警告", "权限不足，无法关闭该进程")
         except Exception as e:
             QMessageBox.critical(self, "错误", f"关闭进程时出错: {str(e)}")
+    
+    def show_context_menu(self, position):
+        """显示右键菜单"""
+        # 获取当前选中行
+        selected_items = self.table.selectedItems()
+        if not selected_items:
+            # 如果没有选中行，则在点击位置选择行
+            item = self.table.itemAt(position)
+            if item:
+                self.table.setCurrentItem(item)
+                selected_items = self.table.selectedItems()
+            else:
+                return
+        
+        # 创建右键菜单
+        context_menu = QMenu(self)
+        
+        # 添加菜单项
+        view_details_action = context_menu.addAction("查看进程详情")
+        kill_process_action = context_menu.addAction("关闭进程")
+        force_kill_action = context_menu.addAction("强制关闭进程")
+        
+        # 显示菜单并获取用户选择的操作
+        action = context_menu.exec_(self.table.mapToGlobal(position))
+        
+        # 处理用户选择的操作
+        if action == view_details_action:
+            self.view_process_details()
+        elif action == kill_process_action:
+            self.kill_process(False)
+        elif action == force_kill_action:
+            self.kill_process(True)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
